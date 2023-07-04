@@ -16,24 +16,51 @@ type Pipe struct {
 
 type PipeOption func(*Pipe)
 
+// WithOutput sets the output writer for the Pipe.
+//
+// w: the output writer to set.
+// Returns: a PipeOption function.
 func WithOutput(w io.Writer) PipeOption {
 	return func(t *Pipe) {
 		t.SetOutput(w)
 	}
 }
 
+// WithInput returns a PipeOption function that sets the input of a Pipe.
+//
+// r is the input reader.
+// PipeOption is a function that modifies a Pipe.
 func WithInput(r io.Reader) PipeOption {
 	return func(t *Pipe) {
 		t.SetInput(r)
 	}
 }
 
+// StartNow returns a PipeOption function that sets the start time of the Pipe to the current time.
+//
+// It takes no parameters and returns a PipeOption.
 func StartNow() PipeOption {
 	return func(t *Pipe) {
 		t.SetStartTime(time.Now())
 	}
 }
 
+// SetStartTime sets the start time of the Pipe.
+//
+// time: the start time to set.
+// Returns: a PipeOption function.
+func SetStartTime(time time.Time) PipeOption {
+	return func(t *Pipe) {
+		t.start = time
+	}
+}
+
+// New creates a new instance of Pipe with the provided options.
+//
+// The options parameter is variadic and allows for configuration of the Pipe.
+// It accepts zero or more PipeOption values.
+//
+// The function returns a pointer to the created Pipe.
 func New(options ...PipeOption) *Pipe {
 	pipe := &Pipe{
 		dataWrite: make(map[time.Duration][]byte),
@@ -45,6 +72,11 @@ func New(options ...PipeOption) *Pipe {
 	return pipe
 }
 
+// Write writes the given byte slice to the Pipe.
+// Storing data and the time passed since the start time of the Pipe.
+//
+// It takes a parameter p which is a byte slice.
+// It returns the number of bytes written and an error, if any.
 func (t *Pipe) Write(p []byte) (n int, err error) {
 
 	if t.start.IsZero() {
@@ -63,6 +95,10 @@ func (t *Pipe) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+// Read reads data from the input into the given byte slice.
+// Storing the time passed since the start time of the pipe
+//
+// It returns the number of bytes read and any error encountered.
 func (t *Pipe) Read(p []byte) (n int, err error) {
 
 	if t.start.IsZero() {
@@ -72,6 +108,9 @@ func (t *Pipe) Read(p []byte) (n int, err error) {
 	if t.input != nil {
 
 		n, err = t.input.Read(p)
+		if err != nil {
+			return n, err
+		}
 		copied := make([]byte, n)
 		copy(copied, p)
 		t.dataRead[time.Since(t.start)] = copied
@@ -82,24 +121,42 @@ func (t *Pipe) Read(p []byte) (n int, err error) {
 
 }
 
+// GetReadData returns the map of bytes read from the pipe, indexed by time duration.
+//
+// It does not take any parameters.
+// It returns a map of time duration to a slice of bytes.
 func (t *Pipe) GetReadData() map[time.Duration][]byte {
 	return t.dataRead
 }
 
+// GetWriteData returns the data to be written by the Pipe.
+//
+// It returns a map with time durations as keys and byte slices as values.
 func (t *Pipe) GetWriteData() map[time.Duration][]byte {
 	return t.dataWrite
 }
 
+// SetInput assigns an input reader to the Pipe.
+//
+// r - the input reader to be assigned.
+// Returns the modified Pipe.
 func (t *Pipe) SetInput(r io.Reader) *Pipe {
 	t.input = r
 	return t
 }
 
+// SetOutput sets the output for the Pipe.
+//
+// It takes a parameter `w` of type `io.Writer` and returns a pointer to `Pipe`.
 func (t *Pipe) SetOutput(w io.Writer) *Pipe {
 	t.output = w
 	return t
 }
 
+// SetStartTime sets the start time of the Pipe.
+//
+// time - the time to set as the start time.
+// Returns a pointer to the Pipe.
 func (t *Pipe) SetStartTime(time time.Time) *Pipe {
 	t.start = time
 	return t

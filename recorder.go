@@ -22,13 +22,22 @@ func NewRecorder() *Recorder {
 //
 // cmdStr: the command to be executed.
 // Returns a pointer to the Record object and an error.
-func (*Recorder) Record(cmdStr string, input io.Reader) (*Record, error) {
+func (r *Recorder) Record(cmdStr string, input io.Reader, args ...string) (*Record, error) {
 
 	if cmdStr == "" {
 		return nil, fmt.Errorf("empty command")
 	}
 
-	cmd := exec.Command(cmdStr)
+	cmd := exec.Command(cmdStr, args...)
+
+	return r.RecordCmd(cmd, input)
+}
+
+func (*Recorder) RecordCmd(cmd *exec.Cmd, input io.Reader) (*Record, error) {
+
+	if cmd == nil {
+		return nil, fmt.Errorf("empty command")
+	}
 
 	errP := timedpipe.New(timedpipe.WithOutput(os.Stderr), timedpipe.StartNow())
 	outP := timedpipe.New(timedpipe.WithOutput(os.Stdout), timedpipe.StartNow())
@@ -36,10 +45,13 @@ func (*Recorder) Record(cmdStr string, input io.Reader) (*Record, error) {
 
 	cmd.Stderr = errP
 	cmd.Stdout = outP
-	cmd.Stdin = inP
+
+	if input != nil {
+		cmd.Stdin = inP
+	}
 
 	record := &Record{
-		Command: cmdStr,
+		Command: cmd.String(),
 		Out:     outP.GetWriteData(),
 		In:      inP.GetReadData(),
 		Err:     errP.GetWriteData(),

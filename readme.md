@@ -1,4 +1,4 @@
-# Record/Replay command
+# Record/Replay commands
 
 A simple lib (with cli) to record the outputs of an command with the same timedelays.
 

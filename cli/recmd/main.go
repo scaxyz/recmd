@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/urfave/cli/v2"
 )
 
 var replayBufferSize = 1024 * 1024
+var defaultFileTimeFormat = "20060102_150405"
 
 func main() {
 
@@ -22,17 +24,18 @@ func main() {
 				&cli.PathFlag{
 					Name:    "input",
 					Usage:   "Use file as input",
-					Aliases: []string{"i", "in"},
+					Aliases: []string{"i", "in", "if"},
 				},
 				&cli.PathFlag{
-					Name:     "output",
-					Usage:    "Output file",
-					Aliases:  []string{"o", "out"},
-					Required: true,
+					Name:        "output",
+					Usage:       "Output file",
+					Aliases:     []string{"o", "out", "of"},
+					DefaultText: fmt.Sprintf("recmd-%s.json", time.Now().Format(defaultFileTimeFormat)),
 				},
 				&cli.BoolFlag{
-					Name:  "no-stdin",
-					Usage: "Disable standard input",
+					Name:    "interactive",
+					Aliases: []string{"inter", "stdin"},
+					Usage:   "Use standard input",
 				},
 			},
 			Action: Record,
@@ -48,6 +51,12 @@ func main() {
 				},
 			},
 			Action: Replay,
+		},
+		{
+			Name:    "convert-to-string",
+			Aliases: []string{"conv-str", "cs"},
+			Usage:   "Converts an record with bytes/base64 to on which uses strings instead",
+			Action:  ConvertToStr,
 		},
 	}
 

@@ -18,10 +18,10 @@ func Record(c *cli.Context) error {
 		return fmt.Errorf("no command specified")
 	}
 
-	var input io.Reader = os.Stdin
+	var input io.Reader = nil
 
-	if c.Bool("no-stdin") {
-		input = nil
+	if c.Bool("interactive") {
+		input = os.Stdin
 	}
 
 	if c.Path("input") != "" {

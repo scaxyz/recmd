@@ -25,9 +25,12 @@ func Replay(c *cli.Context) error {
 		return err
 	}
 
-	record := &recmd.Record{}
+	jSRecord := recmd.JsonStrRecord{
+		Record: &recmd.Record{},
+	}
+	record := jSRecord.Record
 
-	err = json.Unmarshal(jsonData, record)
+	err = json.Unmarshal(jsonData, &jSRecord)
 	if err != nil {
 		return err
 	}

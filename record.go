@@ -1,6 +1,9 @@
 package recmd
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"io"
 	"sort"
 	"time"
@@ -11,6 +14,10 @@ type Record struct {
 	Out     map[time.Duration][]byte
 	In      map[time.Duration][]byte
 	Err     map[time.Duration][]byte
+}
+
+type JsonStrRecord struct {
+	Record *Record `json:",inline"`
 }
 
 type RecordReader struct {
@@ -107,4 +114,101 @@ func (rr *RecordReader) Read(p []byte) (n int, err error) {
 
 	// Return the number of bytes read and nil error
 	return n, nil
+}
+
+func (sjr *JsonStrRecord) MarshalJSON() ([]byte, error) {
+
+	withBytes, err := json.Marshal(sjr.Record)
+	if err != nil {
+		return nil, err
+	}
+	asMap := make(map[string]interface{})
+	err = json.Unmarshal(withBytes, &asMap)
+
+	if err != nil {
+		return nil, err
+	}
+
+	withStrs := recursivMap(asMap, "", func(data map[string]interface{}, k, path string) {
+		if path == ".Command" {
+			return
+		}
+
+		if maybeBase64, ok := data[k].(string); ok {
+			decoded, err := base64.StdEncoding.DecodeString(maybeBase64)
+
+			if err != nil {
+				return
+			}
+
+			data[k] = string(decoded)
+		}
+
+	})
+	return json.Marshal(withStrs)
+
+}
+
+func recursivMap(data map[string]interface{}, path string, callback func(data map[string]interface{}, k string, path string)) map[string]interface{} {
+	if data == nil {
+		return data
+	}
+
+	for k, v := range data {
+		nextPath := fmt.Sprint(path, ".", k)
+
+		if v, ok := v.(map[string]interface{}); ok {
+			recursivMap(v, nextPath, callback)
+			continue
+		}
+		if v, ok := v.([]interface{}); ok {
+			for _, item := range v {
+				if item, ok := item.(map[string]interface{}); ok {
+					recursivMap(item, nextPath, callback)
+				}
+			}
+			continue
+		}
+
+		callback(data, k, nextPath)
+
+	}
+	return data
+
+}
+
+func (sjr *JsonStrRecord) UnmarshalJSON(data []byte) error {
+	asStringMap := make(map[string]interface{})
+	err := json.Unmarshal(data, &asStringMap)
+	if err != nil {
+		return err
+	}
+
+	mapWithBytes := recursivMap(asStringMap, "", func(data map[string]interface{}, k, path string) {
+		if path == ".Command" {
+			return
+		}
+
+		if maybeBase64, ok := data[k].(string); ok {
+			decoded, err := base64.StdEncoding.DecodeString(maybeBase64)
+			if err == nil {
+				data[k] = decoded
+				return
+			}
+			data[k] = []byte(maybeBase64)
+		}
+
+	})
+
+	jsonWithBytes, err := json.Marshal(mapWithBytes)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(jsonWithBytes, sjr.Record)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

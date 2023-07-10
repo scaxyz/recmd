@@ -33,6 +33,11 @@ func main() {
 					DefaultText: fmt.Sprintf("recmd-%s.json", time.Now().Format(defaultFileTimeFormat)),
 				},
 				&cli.BoolFlag{
+					Name:    "save-with-plain-text",
+					Aliases: []string{"plain-text", "plain", "pt", "p"},
+					Usage:   "Saves to json with 'in','out' and 'err' as plain texts instead of base64 encodings",
+				},
+				&cli.BoolFlag{
 					Name:    "interactive",
 					Aliases: []string{"inter", "stdin"},
 					Usage:   "Use standard input",
@@ -53,9 +58,9 @@ func main() {
 			Action: Replay,
 		},
 		{
-			Name:    "convert-to-string",
-			Aliases: []string{"conv-str", "cs"},
-			Usage:   "Converts an record with bytes/base64 to on which uses strings instead",
+			Name:    "convert-to-plain-text",
+			Aliases: []string{"conv-plain", "cpt"},
+			Usage:   "Converts an record with 'in', 'out' and 'error' as base64 to on which uses plain text instead",
 			Action:  ConvertToStr,
 		},
 	}

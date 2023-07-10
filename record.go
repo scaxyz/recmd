@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -133,16 +134,19 @@ func (sjr *JsonStrRecord) MarshalJSON() ([]byte, error) {
 		if path == ".Command" {
 			return
 		}
+		var asString string
 
-		if maybeBase64, ok := data[k].(string); ok {
-			decoded, err := base64.StdEncoding.DecodeString(maybeBase64)
-
-			if err != nil {
-				return
-			}
-
-			data[k] = string(decoded)
+		var ok bool
+		if asString, ok = data[k].(string); !ok {
+			return
 		}
+
+		decoded, err := base64.StdEncoding.DecodeString(asString)
+		if err != nil {
+			return
+		}
+
+		data[k] = string(decoded)
 
 	})
 	return json.Marshal(withStrs)
@@ -188,15 +192,24 @@ func (sjr *JsonStrRecord) UnmarshalJSON(data []byte) error {
 		if path == ".Command" {
 			return
 		}
-
-		if maybeBase64, ok := data[k].(string); ok {
-			decoded, err := base64.StdEncoding.DecodeString(maybeBase64)
-			if err == nil {
-				data[k] = decoded
-				return
-			}
-			data[k] = []byte(maybeBase64)
+		var asString string
+		var ok bool
+		if asString, ok = data[k].(string); !ok {
+			return
 		}
+
+		endsWithNewLine := strings.HasSuffix(asString, "\n")
+
+		if endsWithNewLine {
+			data[k] = []byte(asString)
+			return
+		}
+
+		decoded, err := base64.StdEncoding.DecodeString(asString)
+		if err != nil {
+			return
+		}
+		data[k] = decoded
 
 	})
 

@@ -10,10 +10,10 @@ import (
 )
 
 type Record struct {
-	Command string
-	Out     map[time.Duration][]byte
-	In      map[time.Duration][]byte
-	Err     map[time.Duration][]byte
+	Command string                   `json:"command"`
+	Out     map[time.Duration][]byte `json:"out"`
+	In      map[time.Duration][]byte `json:"in"`
+	Err     map[time.Duration][]byte `json:"err"`
 }
 
 type JsonStrRecord struct {

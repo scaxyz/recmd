@@ -26,7 +26,7 @@ func ConvertToStr(c *cli.Context) error {
 		return err
 	}
 
-	record := &recmd.JsonStrRecord{
+	record := &recmd.PlainableRecord{
 		Record: &recmd.Record{},
 	}
 
@@ -45,7 +45,7 @@ func ConvertToStr(c *cli.Context) error {
 	if strings.TrimSpace(outputPath) == "" {
 		ext := filepath.Ext(recordFile)
 		basenameAndPath := strings.TrimSuffix(recordFile, ext)
-		newFilePath := fmt.Sprint(basenameAndPath, ".str", ext)
+		newFilePath := fmt.Sprint(basenameAndPath, ".plain", ext)
 		outputPath = newFilePath
 	}
 

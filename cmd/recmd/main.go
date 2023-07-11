@@ -27,10 +27,10 @@ func main() {
 					Aliases: []string{"i", "in", "if"},
 				},
 				&cli.PathFlag{
-					Name:        "output",
-					Usage:       "Output file",
-					Aliases:     []string{"o", "out", "of"},
-					DefaultText: fmt.Sprintf("recmd-%s.json", time.Now().Format(defaultFileTimeFormat)),
+					Name:    "output",
+					Usage:   "Output file",
+					Aliases: []string{"o", "out", "of"},
+					Value:   fmt.Sprintf("recmd-%s.json", time.Now().Format(defaultFileTimeFormat)),
 				},
 				&cli.BoolFlag{
 					Name:    "save-with-plain-text",

@@ -17,16 +17,23 @@ type Record struct {
 	Err     map[time.Duration][]byte `json:"err"`
 }
 
-type JsonStrRecord struct {
+// TOOO find a bettern name
+// A wrapper that allows the record to be unmarshaled from json with and without base64 encoded data
+type PlainableRecord struct {
 	Record *Record `json:",inline"`
 }
 
 type RecordReader struct {
-	data       map[time.Duration][]byte
-	timepoints []time.Duration
-	index      int
-	readCount  int
-	ignoreTime bool
+	data             map[time.Duration][]byte
+	sortedTimepoints []time.Duration
+	index            int
+	readCount        int
+	ignoreTime       bool
+}
+
+func (rr *RecordReader) Reset() {
+	rr.index = 0
+	rr.readCount = 0
 }
 
 // IgnoreTime sets the ignoreTime field of the RecordReader struct to true.
@@ -34,6 +41,10 @@ type RecordReader struct {
 // This function does not take any parameters and does not return any values.
 func (rr *RecordReader) IgnoreTime() {
 	rr.ignoreTime = true
+}
+
+func (rr *RecordReader) RespectTime() {
+	rr.ignoreTime = false
 }
 
 // Reader returns a RecordReader object.
@@ -69,8 +80,8 @@ func (r *Record) Reader() *RecordReader {
 
 	// Return new RecordReader object
 	return &RecordReader{
-		data:       data,
-		timepoints: timepoints,
+		data:             data,
+		sortedTimepoints: timepoints,
 	}
 }
 
@@ -79,17 +90,17 @@ func (r *Record) Reader() *RecordReader {
 // It returns the number of bytes read and an error if any.
 func (rr *RecordReader) Read(p []byte) (n int, err error) {
 	// Check if there is no data left to read
-	if len(rr.timepoints[rr.index:]) == 0 {
+	if len(rr.sortedTimepoints[rr.index:]) == 0 {
 		return 0, io.EOF
 	}
 
 	// Get the current timepoint
-	timepoint := rr.timepoints[rr.index]
+	timepoint := rr.sortedTimepoints[rr.index]
 
 	// Calculate the time difference between the current timepoint and the previous one
 	var diff time.Duration = 0
 	if rr.index != 0 {
-		diff = timepoint - rr.timepoints[rr.index-1]
+		diff = timepoint - rr.sortedTimepoints[rr.index-1]
 	}
 
 	// Get the data to read from the current timepoint and readCount
@@ -117,7 +128,7 @@ func (rr *RecordReader) Read(p []byte) (n int, err error) {
 	return n, nil
 }
 
-func (sjr *JsonStrRecord) MarshalJSON() ([]byte, error) {
+func (sjr *PlainableRecord) MarshalJSON() ([]byte, error) {
 
 	withBytes, err := json.Marshal(sjr.Record)
 	if err != nil {
@@ -181,7 +192,7 @@ func recursivMap(data map[string]interface{}, path string, callback func(data ma
 
 }
 
-func (sjr *JsonStrRecord) UnmarshalJSON(data []byte) error {
+func (sjr *PlainableRecord) UnmarshalJSON(data []byte) error {
 	asStringMap := make(map[string]interface{})
 	err := json.Unmarshal(data, &asStringMap)
 	if err != nil {

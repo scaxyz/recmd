@@ -50,7 +50,7 @@ func Record(c *cli.Context) error {
 
 	var finalRecord interface{} = record
 	if c.Bool("save-with-plain-text") {
-		finalRecord = &recmd.JsonStrRecord{Record: record}
+		finalRecord = &recmd.PlainableRecord{Record: record}
 	}
 
 	recordJSON, err := json.Marshal(finalRecord)

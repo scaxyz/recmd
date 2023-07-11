@@ -25,7 +25,7 @@ func Replay(c *cli.Context) error {
 		return err
 	}
 
-	jSRecord := recmd.JsonStrRecord{
+	jSRecord := recmd.PlainableRecord{
 		Record: &recmd.Record{},
 	}
 	record := jSRecord.Record

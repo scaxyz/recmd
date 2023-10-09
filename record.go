@@ -1,238 +1,162 @@
 package recmd
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
-	"sort"
-	"strings"
 	"time"
+
+	"github.com/samber/lo"
 )
 
-type Record struct {
-	Command string                   `json:"command"`
-	Out     map[time.Duration][]byte `json:"out"`
-	In      map[time.Duration][]byte `json:"in"`
-	Err     map[time.Duration][]byte `json:"err"`
+type RecordFormat string
+
+const (
+	FormatString RecordFormat = "string"
+	FormatBase64 RecordFormat = "base64"
+)
+
+type Record interface {
+	Format() RecordFormat
+	Command() string
+	StdOut() map[time.Duration][]byte
+	StdIn() map[time.Duration][]byte
+	StdErr() map[time.Duration][]byte
+	Reader() io.Reader
+	ConvertTo(format RecordFormat) (Record, error)
 }
 
-// TOOO find a bettern name
-// A wrapper that allows the record to be unmarshaled from json with and without base64 encoded data
-type PlainableRecord struct {
-	Record *Record `json:",inline"`
+type ByteRecord struct {
+	Cmd        string                   `json:"command"`
+	Out        map[time.Duration][]byte `json:"out"`
+	In         map[time.Duration][]byte `json:"in"`
+	Err        map[time.Duration][]byte `json:"err"`
+	JsonFormat RecordFormat             `json:"format"`
 }
 
-type RecordReader struct {
-	data             map[time.Duration][]byte
-	sortedTimepoints []time.Duration
-	index            int
-	readCount        int
-	ignoreTime       bool
-}
-
-func (rr *RecordReader) Reset() {
-	rr.index = 0
-	rr.readCount = 0
-}
-
-// IgnoreTime sets the ignoreTime field of the RecordReader struct to true.
-//
-// This function does not take any parameters and does not return any values.
-func (rr *RecordReader) IgnoreTime() {
-	rr.ignoreTime = true
-}
-
-func (rr *RecordReader) RespectTime() {
-	rr.ignoreTime = false
+type StringRecord struct {
+	Cmd        string                   `json:"command"`
+	Out        map[time.Duration]string `json:"out"`
+	In         map[time.Duration]string `json:"in"`
+	Err        map[time.Duration]string `json:"err"`
+	JsonFormat RecordFormat             `json:"format"`
 }
 
 // Reader returns a RecordReader object.
 //
 // It creates a map of time durations to byte slices from the Out, In, and Err fields of the Record object.
 // It then sorts the time durations in ascending order and returns a new RecordReader object with the created map and the sorted time durations.
-func (r *Record) Reader() *RecordReader {
-	data := make(map[time.Duration][]byte)
-
-	// Copy values from r.Out, r.In, and r.Err to data
-	for k, v := range r.Out {
-		data[k] = v
-	}
-	for k, v := range r.In {
-		data[k] = v
-	}
-	for k, v := range r.Err {
-		data[k] = v
-	}
-
-	// Collect time durations
-	timepoints := make([]time.Duration, len(data))
-	i := 0
-	for k := range data {
-		timepoints[i] = k
-		i++
-	}
-
-	// Sort time durations in ascending order
-	sort.Slice(timepoints, func(i, j int) bool {
-		return timepoints[i] < timepoints[j]
-	})
-
-	// Return new RecordReader object
-	return &RecordReader{
-		data:             data,
-		sortedTimepoints: timepoints,
-	}
+func (r *ByteRecord) Reader() io.Reader {
+	return NewReader(r)
 }
 
-// Read reads data from the RecordReader into the provided byte slice.
-//
-// It returns the number of bytes read and an error if any.
-func (rr *RecordReader) Read(p []byte) (n int, err error) {
-	// Check if there is no data left to read
-	if len(rr.sortedTimepoints[rr.index:]) == 0 {
-		return 0, io.EOF
-	}
-
-	// Get the current timepoint
-	timepoint := rr.sortedTimepoints[rr.index]
-
-	// Calculate the time difference between the current timepoint and the previous one
-	var diff time.Duration = 0
-	if rr.index != 0 {
-		diff = timepoint - rr.sortedTimepoints[rr.index-1]
-	}
-
-	// Get the data to read from the current timepoint and readCount
-	data := rr.data[timepoint][rr.readCount:]
-
-	// Copy the data into the provided byte slice
-	n = copy(p, data)
-
-	// Update the readCount
-	rr.readCount += n
-
-	// Check if all data from the current timepoint has been read
-	if rr.readCount == len(rr.data[timepoint]) {
-		// Reset the readCount and move to the next timepoint
-		rr.readCount = 0
-		rr.index++
-	}
-
-	// Check if its the first read for the timepoint and it has a diff and the ignoreTime field is not set
-	if (rr.readCount == 0 && diff != 0) && !rr.ignoreTime {
-		<-time.NewTimer(diff).C
-	}
-
-	// Return the number of bytes read and nil error
-	return n, nil
+func (br *ByteRecord) StdOut() map[time.Duration][]byte {
+	return br.Out
 }
 
-func (sjr *PlainableRecord) MarshalJSON() ([]byte, error) {
-
-	withBytes, err := json.Marshal(sjr.Record)
-	if err != nil {
-		return nil, err
-	}
-	asMap := make(map[string]interface{})
-	err = json.Unmarshal(withBytes, &asMap)
-
-	if err != nil {
-		return nil, err
-	}
-
-	withStrs := recursivMap(asMap, "", func(data map[string]interface{}, k, path string) {
-		if path == ".Command" {
-			return
-		}
-		var asString string
-
-		var ok bool
-		if asString, ok = data[k].(string); !ok {
-			return
-		}
-
-		decoded, err := base64.StdEncoding.DecodeString(asString)
-		if err != nil {
-			return
-		}
-
-		data[k] = string(decoded)
-
-	})
-	return json.Marshal(withStrs)
-
+func (br *ByteRecord) StdIn() map[time.Duration][]byte {
+	return br.In
 }
 
-func recursivMap(data map[string]interface{}, path string, callback func(data map[string]interface{}, k string, path string)) map[string]interface{} {
-	if data == nil {
-		return data
+func (br *ByteRecord) StdErr() map[time.Duration][]byte {
+	return br.Err
+}
+
+func (br *ByteRecord) Command() string {
+	return br.Cmd
+}
+
+func (br *ByteRecord) Format() RecordFormat {
+	if br.JsonFormat == "" {
+		br.JsonFormat = FormatBase64
 	}
+	return br.JsonFormat
+}
 
-	for k, v := range data {
-		nextPath := fmt.Sprint(path, ".", k)
-
-		if v, ok := v.(map[string]interface{}); ok {
-			recursivMap(v, nextPath, callback)
-			continue
-		}
-		if v, ok := v.([]interface{}); ok {
-			for _, item := range v {
-				if item, ok := item.(map[string]interface{}); ok {
-					recursivMap(item, nextPath, callback)
-				}
+func (br *ByteRecord) ConvertTo(format RecordFormat) (Record, error) {
+	switch format {
+	case FormatString:
+		convert := func(byteMap map[time.Duration][]byte) map[time.Duration]string {
+			convertedMap := make(map[time.Duration]string)
+			for k, v := range byteMap {
+				convertedMap[k] = string(v)
 			}
-			continue
+			return convertedMap
 		}
-
-		callback(data, k, nextPath)
-
+		return &StringRecord{
+			Cmd:        br.Cmd,
+			Out:        convert(br.Out),
+			In:         convert(br.In),
+			Err:        convert(br.Err),
+			JsonFormat: br.JsonFormat,
+		}, nil
+	case FormatBase64:
+		return &ByteRecord{
+			Cmd:        br.Cmd,
+			Out:        br.Out,
+			In:         br.In,
+			Err:        br.Err,
+			JsonFormat: br.JsonFormat,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown format: %s", format)
 	}
-	return data
 
 }
 
-func (sjr *PlainableRecord) UnmarshalJSON(data []byte) error {
-	asStringMap := make(map[string]interface{})
-	err := json.Unmarshal(data, &asStringMap)
-	if err != nil {
-		return err
-	}
+func (sr *StringRecord) Reader() io.Reader {
+	return NewReader(sr)
+}
 
-	mapWithBytes := recursivMap(asStringMap, "", func(data map[string]interface{}, k, path string) {
-		if path == ".Command" {
-			return
-		}
-		var asString string
-		var ok bool
-		if asString, ok = data[k].(string); !ok {
-			return
-		}
-
-		endsWithNewLine := strings.HasSuffix(asString, "\n")
-
-		if endsWithNewLine {
-			data[k] = []byte(asString)
-			return
-		}
-
-		decoded, err := base64.StdEncoding.DecodeString(asString)
-		if err != nil {
-			return
-		}
-		data[k] = decoded
-
+func (sr *StringRecord) StdOut() map[time.Duration][]byte {
+	return lo.MapValues[time.Duration, string, []byte](sr.Out, func(value string, _ time.Duration) []byte {
+		return []byte(value)
 	})
+}
 
-	jsonWithBytes, err := json.Marshal(mapWithBytes)
-	if err != nil {
-		return err
+func (sr *StringRecord) StdIn() map[time.Duration][]byte {
+	return lo.MapValues[time.Duration, string, []byte](sr.In, func(value string, _ time.Duration) []byte {
+		return []byte(value)
+	})
+}
+
+func (sr *StringRecord) StdErr() map[time.Duration][]byte {
+	return lo.MapValues[time.Duration, string, []byte](sr.Err, func(value string, _ time.Duration) []byte {
+		return []byte(value)
+	})
+}
+
+func (sr *StringRecord) Command() string {
+	return sr.Cmd
+}
+
+func (sr *StringRecord) Format() RecordFormat {
+	if sr.JsonFormat == "" {
+		sr.JsonFormat = FormatBase64
 	}
+	return sr.JsonFormat
+}
 
-	err = json.Unmarshal(jsonWithBytes, sjr.Record)
-	if err != nil {
-		return err
+func (sr *StringRecord) ConvertTo(format RecordFormat) (Record, error) {
+	switch format {
+	case FormatString:
+		return sr, nil
+	case FormatBase64:
+		convert := func(stringMap map[time.Duration]string) map[time.Duration][]byte {
+			convertedMap := make(map[time.Duration][]byte)
+			for k, v := range stringMap {
+				convertedMap[k] = []byte(v)
+			}
+			return convertedMap
+
+		}
+		return &ByteRecord{
+			Cmd:        sr.Cmd,
+			Out:        convert(sr.Out),
+			In:         convert(sr.In),
+			Err:        convert(sr.Err),
+			JsonFormat: sr.JsonFormat,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown format: %s", format)
 	}
-
-	return nil
 }

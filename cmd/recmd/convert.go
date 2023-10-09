@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/scaxyz/recmd"
+	"github.com/tidwall/gjson"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,16 +27,22 @@ func ConvertToStr(c *cli.Context) error {
 		return err
 	}
 
-	record := &recmd.PlainableRecord{
-		Record: &recmd.Record{},
+	format := gjson.Get(string(jsonData), "format")
+	var record recmd.Record
+	switch format.String() {
+	case string(recmd.FormatBase64):
+		record = &recmd.ByteRecord{}
+	case string(recmd.FormatString):
+		record = &recmd.StringRecord{}
+	default:
+		return fmt.Errorf("unknown format: %s", format.String())
 	}
 
-	err = json.Unmarshal(jsonData, record)
+	err = json.Unmarshal(jsonData, &record)
 	if err != nil {
 		return err
 	}
-
-	jsonWithStrings, err := json.Marshal(&record)
+	strRecord, err := record.ConvertTo(recmd.FormatString)
 	if err != nil {
 		return err
 	}
@@ -50,12 +57,15 @@ func ConvertToStr(c *cli.Context) error {
 	}
 
 	outputFile, err := os.Create(outputPath)
-
 	if err != nil {
 		return err
 	}
+	defer outputFile.Close()
 
-	outputFile.Write(jsonWithStrings)
+	err = json.NewEncoder(outputFile).Encode(strRecord)
+	if err != nil {
+		return err
+	}
 
 	return nil
 

@@ -48,9 +48,12 @@ func Record(c *cli.Context) error {
 	}
 	defer outputFile.Close()
 
-	var finalRecord interface{} = record
+	var finalRecord recmd.Record = record
 	if c.Bool("save-with-plain-text") {
-		finalRecord = &recmd.PlainableRecord{Record: record}
+		finalRecord, err = finalRecord.ConvertTo(recmd.FormatString)
+		if err != nil {
+			return err
+		}
 	}
 
 	recordJSON, err := json.Marshal(finalRecord)

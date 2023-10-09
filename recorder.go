@@ -22,18 +22,22 @@ func NewRecorder() *Recorder {
 //
 // cmdStr: the command to be executed.
 // Returns a pointer to the Record object and an error.
-func (r *Recorder) Record(cmdStr string, input io.Reader, args ...string) (*Record, error) {
+func (r *Recorder) Record(cmdStr string, input io.Reader, args ...string) (Record, error) {
 
 	if cmdStr == "" {
 		return nil, fmt.Errorf("empty command")
 	}
 
 	cmd := exec.Command(cmdStr, args...)
+	record, err := r.RecordCmd(cmd, input)
+	if err != nil {
+		return nil, err
+	}
 
-	return r.RecordCmd(cmd, input)
+	return record, nil
 }
 
-func (*Recorder) RecordCmd(cmd *exec.Cmd, input io.Reader) (*Record, error) {
+func (*Recorder) RecordCmd(cmd *exec.Cmd, input io.Reader) (Record, error) {
 
 	if cmd == nil {
 		return nil, fmt.Errorf("empty command")
@@ -50,11 +54,12 @@ func (*Recorder) RecordCmd(cmd *exec.Cmd, input io.Reader) (*Record, error) {
 		cmd.Stdin = inP
 	}
 
-	record := &Record{
-		Command: cmd.String(),
-		Out:     outP.GetWriteData(),
-		In:      inP.GetReadData(),
-		Err:     errP.GetWriteData(),
+	record := &ByteRecord{
+		Cmd:        cmd.String(),
+		Out:        outP.GetWriteData(),
+		In:         inP.GetReadData(),
+		Err:        errP.GetWriteData(),
+		JsonFormat: FormatBase64,
 	}
 	err := cmd.Run()
 	return record, err

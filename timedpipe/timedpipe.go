@@ -10,6 +10,7 @@ type Pipe struct {
 	dataWrite map[time.Duration][]byte
 	dataRead  map[time.Duration][]byte
 	start     time.Time
+	started   bool
 	output    io.Writer
 	input     io.Reader
 }
@@ -72,6 +73,11 @@ func New(options ...PipeOption) *Pipe {
 	return pipe
 }
 
+func (t *Pipe) setStartTime() {
+	t.start = time.Now()
+	t.started = true
+}
+
 // Write writes the given byte slice to the Pipe.
 // Storing data and the time passed since the start time of the Pipe.
 //
@@ -79,8 +85,8 @@ func New(options ...PipeOption) *Pipe {
 // It returns the number of bytes written and an error, if any.
 func (t *Pipe) Write(p []byte) (n int, err error) {
 
-	if t.start.IsZero() {
-		t.start = time.Now()
+	if !t.started {
+		t.setStartTime()
 	}
 
 	copied := make([]byte, len(p))
@@ -101,12 +107,11 @@ func (t *Pipe) Write(p []byte) (n int, err error) {
 // It returns the number of bytes read and any error encountered.
 func (t *Pipe) Read(p []byte) (n int, err error) {
 
-	if t.start.IsZero() {
-		t.start = time.Now()
+	if !t.started {
+		t.setStartTime()
 	}
 
 	if t.input != nil {
-
 		n, err = t.input.Read(p)
 		if err != nil {
 			return n, err

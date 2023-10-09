@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 
 	"github.com/scaxyz/recmd/timedpipe"
 )
@@ -61,6 +63,29 @@ func (*Recorder) RecordCmd(cmd *exec.Cmd, input io.Reader) (Record, error) {
 		Err:        errP.GetWriteData(),
 		JsonFormat: FormatBase64,
 	}
-	err := cmd.Run()
-	return record, err
+
+	stopChan := make(chan os.Signal, 2)
+	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+
+	doneChan := make(chan error)
+
+	go func() {
+		err := cmd.Run()
+		doneChan <- err
+	}()
+
+	var err error
+
+	select {
+	case interrupt := <-stopChan:
+		cmd.Process.Signal(interrupt)
+	case err = <-doneChan:
+		break
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return record, nil
 }

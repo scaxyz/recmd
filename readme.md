@@ -2,6 +2,11 @@
 
 A simple lib (with cli) to record the outputs of an command with the same timedelays.
 
+## Installation
+
+```
+go install github.com/scaxyz/recmd
+```
 
 ## Usage
 ### recmd
@@ -156,7 +161,7 @@ Produces `recmd-20230710_171624.json` with:
 </details>
 <br>
 
-### `recmd replay recmd-20230710_171624`
+### `recmd replay recmd-wget-20230710_171624.json`
 Displayes:
 ```text
 Replaying:  /usr/bin/wget duckduckgo.com
@@ -176,8 +181,8 @@ Saving to: ‘index.html.1’
 2023-07-10 17:16:25 (9,53 MB/s) - ‘index.html.1’ saved [6469/6469]
 ```
 
-### `recmd conv-plain recmd-20230710_171624.json`
-Produces `recmd-20230710_171624.plain.json` with:
+### `recmd conv-plain recmd-wget-20230710_171624.json`
+Produces `recmd-wget-20230710_171624-string.json` with:
 
 <details>
 <summary>Click to expand</summary>
@@ -263,12 +268,6 @@ Produces `recmd-20230710_171624.plain.json` with:
 
 </details>
 <br>
-
-## Installation
-
-```
-go install github.com/scaxyz/recmd
-```
 
 ## Known bugs
 - when recording the `bash` executeable, typing `exit` and pressing `enter` requires a second `enter` to exit

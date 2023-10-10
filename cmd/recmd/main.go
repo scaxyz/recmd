@@ -23,7 +23,7 @@ func main() {
 			Flags: []cli.Flag{
 				&cli.PathFlag{
 					Name:    "input",
-					Usage:   "Use file as input",
+					Usage:   "Use file as stdin",
 					Aliases: []string{"i", "in", "if"},
 				},
 				&cli.PathFlag{

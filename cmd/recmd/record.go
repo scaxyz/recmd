@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -11,8 +12,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func Record(c *cli.Context) error {
-	commands := c.Args().Slice()
+func Record(ctx *cli.Context) error {
+	commands := ctx.Args().Slice()
 
 	if len(commands) == 0 {
 		return fmt.Errorf("no command specified")
@@ -20,12 +21,12 @@ func Record(c *cli.Context) error {
 
 	var input io.Reader = nil
 
-	if c.Bool("interactive") {
+	if ctx.Bool("interactive") {
 		input = os.Stdin
 	}
 
-	if c.Path("input") != "" {
-		fileInput, err := os.Open(c.Path("input"))
+	if ctx.Path("input") != "" {
+		fileInput, err := os.Open(ctx.Path("input"))
 		if err != nil {
 			return err
 		}
@@ -42,14 +43,14 @@ func Record(c *cli.Context) error {
 		return err
 	}
 
-	outputFile, err := os.Create(c.String("output"))
+	outputFile, err := os.Create(ctx.Path("output"))
 	if err != nil {
 		return err
 	}
 	defer outputFile.Close()
 
 	var finalRecord recmd.Record = record
-	if c.Bool("save-with-plain-text") {
+	if ctx.Bool("save-with-plain-text") {
 		finalRecord, err = finalRecord.ConvertTo(recmd.FormatString)
 		if err != nil {
 			return err
@@ -65,6 +66,8 @@ func Record(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	log.Println("wrote recording to " + ctx.Path("output"))
 
 	return nil
 }

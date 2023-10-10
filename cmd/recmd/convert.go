@@ -13,8 +13,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func ConvertToStr(c *cli.Context) error {
-	recordFile := c.Args().First()
+func ConvertToStr(ctx *cli.Context) error {
+	recordFile := ctx.Args().First()
 
 	file, err := os.Open(recordFile)
 	if err != nil {
@@ -47,7 +47,7 @@ func ConvertToStr(c *cli.Context) error {
 		return err
 	}
 
-	outputPath := c.Args().Get(1)
+	outputPath := ctx.Args().Get(1)
 
 	if strings.TrimSpace(outputPath) == "" {
 		ext := filepath.Ext(recordFile)

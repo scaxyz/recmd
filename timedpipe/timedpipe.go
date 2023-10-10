@@ -89,10 +89,18 @@ func (t *Pipe) Write(p []byte) (n int, err error) {
 		t.setStartTime()
 	}
 
+	if p == nil {
+		return 0, fmt.Errorf("no buffer")
+	}
+
+	stamp := time.Now()
+
 	copied := make([]byte, len(p))
 	copy(copied, p)
 
-	t.dataWrite[time.Since(t.start)] = copied
+	go func() {
+		t.dataWrite[stamp.Sub(t.start)] = copied
+	}()
 
 	if t.output != nil {
 		return t.output.Write(p)
@@ -111,18 +119,25 @@ func (t *Pipe) Read(p []byte) (n int, err error) {
 		t.setStartTime()
 	}
 
-	if t.input != nil {
-		n, err = t.input.Read(p)
-		if err != nil {
-			return n, err
-		}
-		copied := make([]byte, n)
-		copy(copied, p)
-		t.dataRead[time.Since(t.start)] = copied
-		return
+	if t.input == nil {
+		return 0, fmt.Errorf("no buffer")
 	}
 
-	return 0, fmt.Errorf("no input")
+	stamp := time.Now()
+
+	n, err = t.input.Read(p)
+	if err != nil {
+		return n, err
+	}
+
+	copied := make([]byte, n)
+	copy(copied, p)
+
+	go func() {
+		t.dataRead[stamp.Sub(t.start)] = copied
+	}()
+
+	return n, nil
 
 }
 

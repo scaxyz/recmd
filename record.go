@@ -96,14 +96,14 @@ func (br *ByteRecord) ConvertTo(format RecordFormat) (Record, error) {
 			Out:        convert(br.Out),
 			In:         convert(br.In),
 			Err:        convert(br.Err),
-			JsonFormat: br.JsonFormat,
+			JsonFormat: FormatString,
 		}, nil
 	case FormatBase64:
 		return &ByteRecord{
 			Cmd:        br.Cmd,
-			Out:        br.Out,
-			In:         br.In,
-			Err:        br.Err,
+			Out:        cloneMap(br.Out),
+			In:         cloneMap(br.In),
+			Err:        cloneMap(br.Err),
 			JsonFormat: br.JsonFormat,
 			ExitC:      br.ExitC,
 		}, nil
@@ -145,7 +145,7 @@ func (sr *StringRecord) ExitCode() int {
 
 func (sr *StringRecord) Format() RecordFormat {
 	if sr.JsonFormat == "" {
-		sr.JsonFormat = FormatBase64
+		sr.JsonFormat = FormatString
 	}
 	return sr.JsonFormat
 }
@@ -153,7 +153,14 @@ func (sr *StringRecord) Format() RecordFormat {
 func (sr *StringRecord) ConvertTo(format RecordFormat) (Record, error) {
 	switch format {
 	case FormatString:
-		return sr, nil
+		return &StringRecord{
+			Cmd:        sr.Cmd,
+			Out:        cloneMap(sr.Out),
+			In:         cloneMap(sr.In),
+			Err:        cloneMap(sr.Err),
+			JsonFormat: sr.JsonFormat,
+			ExitC:      sr.ExitC,
+		}, nil
 	case FormatBase64:
 		convert := func(stringMap map[time.Duration]string) map[time.Duration][]byte {
 			convertedMap := make(map[time.Duration][]byte)
@@ -168,10 +175,18 @@ func (sr *StringRecord) ConvertTo(format RecordFormat) (Record, error) {
 			Out:        convert(sr.Out),
 			In:         convert(sr.In),
 			Err:        convert(sr.Err),
-			JsonFormat: sr.JsonFormat,
+			JsonFormat: FormatBase64,
 			ExitC:      sr.ExitC,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown format: %s", format)
 	}
+}
+
+func cloneMap[K comparable, V any](originalMap map[K]V) map[K]V {
+	clonedMap := make(map[K]V)
+	for key, value := range originalMap {
+		clonedMap[key] = value
+	}
+	return clonedMap
 }

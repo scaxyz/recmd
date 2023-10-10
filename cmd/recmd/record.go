@@ -58,7 +58,7 @@ func Record(ctx *cli.Context) error {
 		return err
 	}
 
-	outputFilePath := buildOutputFilePath(finalRecord, ctx.Path("output"), now.Format(ctx.String("")))
+	outputFilePath := buildOutputFilePath(finalRecord, ctx.Path("output"), now.Format(ctx.String("time-format")))
 
 	outputFile, err := os.Create(outputFilePath)
 	if err != nil {

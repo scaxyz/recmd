@@ -5,7 +5,7 @@ A simple lib (with cli) to record the outputs of an command with the same timede
 ## Installation
 
 ```
-go install github.com/scaxyz/recmd
+go install github.com/scaxyz/recmd/cmd/recmd
 ```
 
 ## Usage

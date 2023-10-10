@@ -85,6 +85,10 @@ func (*Recorder) RecordCmd(cmd *exec.Cmd, input io.Reader) (Record, error) {
 
 	record.ExitC = cmd.ProcessState.ExitCode()
 
+	if _, ok := err.(*exec.ExitError); ok {
+		err = nil
+	}
+
 	if err != nil {
 		return nil, err
 	}

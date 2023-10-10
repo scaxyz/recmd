@@ -10,6 +10,8 @@ import (
 
 var replayBufferSize = 1024 * 1024
 var defaultFileTimeFormat = "20060102_150405"
+var defaultOutputTemplate = "recmd-{{ .CmdBaseName }}-{{ .Time }}.json"
+var outputTemplateOnTemplateError = fmt.Sprintf("recmd-%s-template-error.json", time.Now().Format(defaultFileTimeFormat))
 
 func main() {
 
@@ -30,12 +32,17 @@ func main() {
 					Name:    "output",
 					Usage:   "Output file",
 					Aliases: []string{"o", "out", "of"},
-					Value:   fmt.Sprintf("recmd-%s.json", time.Now().Format(defaultFileTimeFormat)),
+					Value:   defaultOutputTemplate,
 				},
 				&cli.BoolFlag{
 					Name:    "save-with-plain-text",
 					Aliases: []string{"plain-text", "plain", "pt", "p"},
 					Usage:   "Saves to json with 'in','out' and 'err' as plain texts instead of base64 encodings",
+				},
+				&cli.StringFlag{
+					Name:  "time-format",
+					Usage: "time format for the output template, accessible with {{ .Time }}",
+					Value: defaultFileTimeFormat,
 				},
 				&cli.BoolFlag{
 					Name:    "interactive",

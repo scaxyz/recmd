@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"strings"
+	"text/template"
+	"time"
 
 	"github.com/scaxyz/recmd"
 	"github.com/urfave/cli/v2"
@@ -14,7 +16,7 @@ import (
 
 func Record(ctx *cli.Context) error {
 	commands := ctx.Args().Slice()
-
+	now := time.Now()
 	if len(commands) == 0 {
 		return fmt.Errorf("no command specified")
 	}
@@ -43,12 +45,6 @@ func Record(ctx *cli.Context) error {
 		return err
 	}
 
-	outputFile, err := os.Create(ctx.Path("output"))
-	if err != nil {
-		return err
-	}
-	defer outputFile.Close()
-
 	var finalRecord recmd.Record = record
 	if ctx.Bool("save-with-plain-text") {
 		finalRecord, err = finalRecord.ConvertTo(recmd.FormatString)
@@ -62,12 +58,40 @@ func Record(ctx *cli.Context) error {
 		return err
 	}
 
+	outputFilePath := buildOutputFilePath(finalRecord, ctx.Path("output"), now.Format(ctx.String("")))
+
+	outputFile, err := os.Create(outputFilePath)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+
 	_, err = outputFile.Write(recordJSON)
 	if err != nil {
 		return err
 	}
 
-	log.Println("wrote recording to " + ctx.Path("output"))
+	log.Println("wrote recording to " + outputFilePath)
 
 	return nil
+}
+
+func buildOutputFilePath(record recmd.Record, templateStr string, time string) string {
+
+	outputTemplate, err := template.New("output").Parse(templateStr)
+	if err != nil {
+		log.Println("error: parsing output path template: " + err.Error())
+		return outputTemplateOnTemplateError
+	}
+
+	builder := strings.Builder{}
+
+	err = outputTemplate.Execute(&builder, NewTemplateContext(record, time))
+	if err != nil {
+		log.Println("error: executing output path template: " + err.Error())
+		return outputTemplateOnTemplateError
+	}
+
+	return builder.String()
+
 }

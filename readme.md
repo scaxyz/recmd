@@ -1,6 +1,6 @@
 # Record/Replay commands
 
-A simple lib (with cli) to record the outputs of an command with the same timedelays.
+A with cli (with lib) to record the outputs of a command and replay it with the same timedelays.
 
 ## Installation
 

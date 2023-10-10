@@ -13,9 +13,13 @@ var defaultFileTimeFormat = "20060102_150405"
 var defaultOutputTemplate = "recmd-{{ .CmdBaseName }}-{{ .Time }}.json"
 var outputTemplateOnTemplateError = fmt.Sprintf("recmd-%s-template-error.json", time.Now().Format(defaultFileTimeFormat))
 
+var version = "development"
+
 func main() {
 
 	app := cli.NewApp()
+	app.Version = version
+	app.Usage = "record or replay inputs and outputs of a command"
 
 	app.Commands = []*cli.Command{
 		{
@@ -71,10 +75,11 @@ func main() {
 			Action: Replay,
 		},
 		{
-			Name:    "convert-to-plain-text",
-			Aliases: []string{"conv-plain", "cpt"},
-			Usage:   "Converts an record with 'in', 'out' and 'error' as base64 to on which uses plain text instead",
-			Action:  ConvertToStr,
+			Name:      "convert-to-plain-text",
+			Aliases:   []string{"conv-plain", "cpt"},
+			Usage:     "Converts an record with 'in', 'out' and 'error' as base64 to one which uses plain text instead, (default-output: <input-name>-string.<input-ext>)",
+			Action:    ConvertToStr,
+			UsageText: "recmd convert-to-plain-text <input-file> [output-file]",
 		},
 	}
 

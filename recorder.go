@@ -83,6 +83,8 @@ func (*Recorder) RecordCmd(cmd *exec.Cmd, input io.Reader) (Record, error) {
 		break
 	}
 
+	record.ExitC = cmd.ProcessState.ExitCode()
+
 	if err != nil {
 		return nil, err
 	}

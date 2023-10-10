@@ -50,9 +50,15 @@ func main() {
 			Aliases: []string{"rep"},
 			Usage:   "Replay a recorded command",
 			Flags: []cli.Flag{
+				&cli.IntFlag{
+					Name:    "exit-code",
+					Usage:   "Overwrites the exit-code from the replay",
+					Aliases: []string{"code", "ec"},
+				},
 				&cli.BoolFlag{
-					Name:  "no-delays",
-					Usage: "Ignore delays while replaying",
+					Name:    "no-delays",
+					Usage:   "Ignore delays while replaying",
+					Aliases: []string{"quick"},
 				},
 			},
 			Action: Replay,

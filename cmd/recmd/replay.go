@@ -11,17 +11,22 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func Replay(c *cli.Context) error {
+func Replay(ctx *cli.Context) error {
 
-	recordFile := c.Args().First()
+	recordFile := ctx.Args().First()
 
 	file, err := os.Open(recordFile)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	jsonData, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	// no defer since we are using os.Exit at the and
+	err = file.Close()
 	if err != nil {
 		return err
 	}
@@ -47,7 +52,7 @@ func Replay(c *cli.Context) error {
 
 	reader := record.Reader()
 
-	if c.Bool("no-delays") {
+	if ctx.Bool("no-delays") {
 		if r, ok := reader.(interface{ IgnoreTime() }); ok {
 			r.IgnoreTime()
 		}
@@ -68,6 +73,12 @@ func Replay(c *cli.Context) error {
 
 		fmt.Print(string(data))
 	}
+	exitCode := record.ExitCode()
+	if ctx.IsSet("exit-code") {
+		exitCode = ctx.Int("exit-code")
+	}
+
+	os.Exit(exitCode)
 
 	return nil
 }

@@ -23,22 +23,27 @@ type Record interface {
 	StdErr() map[time.Duration][]byte
 	Reader() io.Reader
 	ConvertTo(format RecordFormat) (Record, error)
+	ExitCode() int
 }
 
 type ByteRecord struct {
-	Cmd        string                   `json:"command"`
-	Out        map[time.Duration][]byte `json:"out"`
-	In         map[time.Duration][]byte `json:"in"`
-	Err        map[time.Duration][]byte `json:"err"`
-	JsonFormat RecordFormat             `json:"format"`
+	JsonFormat RecordFormat `json:"format"`
+
+	Cmd   string                   `json:"command"`
+	Out   map[time.Duration][]byte `json:"out"`
+	In    map[time.Duration][]byte `json:"in"`
+	Err   map[time.Duration][]byte `json:"err"`
+	ExitC int                      `json:"exitcode"`
 }
 
 type StringRecord struct {
-	Cmd        string                   `json:"command"`
-	Out        map[time.Duration]string `json:"out"`
-	In         map[time.Duration]string `json:"in"`
-	Err        map[time.Duration]string `json:"err"`
-	JsonFormat RecordFormat             `json:"format"`
+	JsonFormat RecordFormat `json:"format"`
+
+	Cmd   string                   `json:"command"`
+	Out   map[time.Duration]string `json:"out"`
+	In    map[time.Duration]string `json:"in"`
+	Err   map[time.Duration]string `json:"err"`
+	ExitC int                      `json:"exitcode"`
 }
 
 // Reader returns a RecordReader object.
@@ -63,6 +68,10 @@ func (br *ByteRecord) StdErr() map[time.Duration][]byte {
 
 func (br *ByteRecord) Command() string {
 	return br.Cmd
+}
+
+func (br *ByteRecord) ExitCode() int {
+	return br.ExitC
 }
 
 func (br *ByteRecord) Format() RecordFormat {
@@ -96,6 +105,7 @@ func (br *ByteRecord) ConvertTo(format RecordFormat) (Record, error) {
 			In:         br.In,
 			Err:        br.Err,
 			JsonFormat: br.JsonFormat,
+			ExitC:      br.ExitC,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown format: %s", format)
@@ -129,6 +139,10 @@ func (sr *StringRecord) Command() string {
 	return sr.Cmd
 }
 
+func (sr *StringRecord) ExitCode() int {
+	return sr.ExitC
+}
+
 func (sr *StringRecord) Format() RecordFormat {
 	if sr.JsonFormat == "" {
 		sr.JsonFormat = FormatBase64
@@ -155,6 +169,7 @@ func (sr *StringRecord) ConvertTo(format RecordFormat) (Record, error) {
 			In:         convert(sr.In),
 			Err:        convert(sr.Err),
 			JsonFormat: sr.JsonFormat,
+			ExitC:      sr.ExitC,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown format: %s", format)

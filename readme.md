@@ -2,71 +2,70 @@
 
 A simple lib (with cli) to record the outputs of an command with the same timedelays.
 
-## Usage lib
-### record
-```go
-recorder := recmd.NewRecorder()
-record := recorder.Record("curl duckduckgo.com",nil)
-record2 := recorder.Record("bash", os.Stdin)
 
-// records are stored as a json
+## Usage
+### recmd
+```text
+NAME:
+   recmd - record or replay inputs and outputs of a command
 
+USAGE:
+   recmd [global options] command [command options] [arguments...]
+
+VERSION:
+   development
+
+COMMANDS:
+   record, rec                             Records the following command
+   replay, rep                             Replay a recorded command
+   convert-to-plain-text, conv-plain, cpt  Converts an record with 'in', 'out' and 'error' as base64 to on which uses plain text instead
+   help, h                                 Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h     show help
+   --version, -v  print the version
 ```
 
-### read
-```go
-var record recmd.Record
-json.Unmarschal(data, &record)
+### recmd record
+```text
+NAME:
+   recmd record - Records the following command
 
-reader := record.Reader();
-data, _ := io.ReadAll(reader);
+USAGE:
+   recmd record [command options] [arguments...]
+
+OPTIONS:
+   --input value, -i value, --in value, --if value          Use file as stdin
+   --output value, -o value, --out value, --of value        Output file (default: "recmd-{{ .CmdBaseName }}-{{ .Time }}.json")
+   --save-with-plain-text, --plain-text, --plain, --pt, -p  Saves to json with 'in','out' and 'err' as plain texts instead of base64 encodings (default: false)
+   --time-format value                                      time format for the output template, accessible with {{ .Time }} (default: "20060102_150405")
+   --interactive, --inter, --stdin                          Use standard input (default: false)
+   --help, -h                                               show help
+```
+### recmd replay
+```text
+NAME:
+   recmd replay - Replay a recorded command
+
+USAGE:
+   recmd replay [command options] [arguments...]
+
+OPTIONS:
+   --exit-code value, --code value, --ec value  Overwrites the exit-code from the replay (default: 0)
+   --no-delays, --quick                         Ignore delays while replaying (default: false)
+   --help, -h                                   show help
 ```
 
+### recmd convert-to-plain-text
+```text
+NAME:
+   recmd convert-to-plain-text - Converts an record with 'in', 'out' and 'error' as base64 to one which uses plain text instead, (default-output: <input-name>-string.<input-ext>)
 
-## Usage cli
+USAGE:
+   recmd convert-to-plain-text <input-file> [output-file]
 
-### record 
-
-```bash
-recmd record wget duckduckgo.com
-
-# or
-
-recmd record --stdin bash
-
-# or 
-
-recmd record --stdin -o apt-record.json apt update
-
-# or
-
-recmd record --plain-text bash
-
-```
-
-### replay
-
-```bash
-
-recmd replay some-record.json
-
-# or 
-
-recmd replay --no-delays some-record.json
-
-```
-
-### convert
-
-```bash
-
-recmd conv-plain input.json output.json
-
-# or
-
-recmd ctp input.json
-# => produces input.plain.json
-
+OPTIONS:
+   --help, -h  show help
 ```
 
 ## Examples cli
@@ -274,4 +273,4 @@ go install github.com/scaxyz/recmd
 ## Known bugs
 - when recording the `bash` executeable, typing `exit` and pressing `enter` requires a second `enter` to exit
 
-## Some records are slower than the original command
+- Some records are slower than the original command

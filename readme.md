@@ -273,3 +273,9 @@ Produces `recmd-wget-20230710_171624-string.json` with:
 - when recording the `bash` executeable, typing `exit` and pressing `enter` requires a second `enter` to exit
 
 - Some records are slower than the original command
+  - (could be because of dynamic allocation for maps of the timedpipes)
+
+## todo
+- `replay --min-delay`
+- `replay --max-delay`
+- `replay --scale=2` => two times faster

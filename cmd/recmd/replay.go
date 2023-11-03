@@ -52,29 +52,25 @@ func Replay(ctx *cli.Context) error {
 		fmt.Println("Replaying: ", record.Command())
 	}
 
-	reader := record.Reader()
+	var replayer *recmd.Replayer
 
 	if ctx.Bool("no-delays") {
-		if r, ok := reader.(interface{ IgnoreTime() }); ok {
-			r.IgnoreTime()
+		replayer = recmd.NewQuickReplayer(record)
+	} else {
+		replayer = recmd.NewReplayer(record)
+	}
+
+	for event := range replayer.C {
+		switch event.DataType {
+		case recmd.StdOut:
+			os.Stdout.Write(event.Data)
+		case recmd.StdErr:
+			os.Stderr.Write(event.Data)
+		case recmd.StdIn:
+			os.Stdout.Write(event.Data)
 		}
 	}
 
-	buffer := make([]byte, replayBufferSize)
-
-	for {
-		data := buffer
-		n, err := reader.Read(data)
-		data = data[:n]
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		fmt.Print(string(data))
-	}
 	exitCode := record.ExitCode()
 	if ctx.IsSet("exit-code") {
 		exitCode = ctx.Int("exit-code")

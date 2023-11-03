@@ -22,6 +22,7 @@ type Record interface {
 	StdIn() map[time.Duration][]byte
 	StdErr() map[time.Duration][]byte
 	CombinedReader() io.Reader
+	Replayer() *Replayer
 	ConvertTo(format RecordFormat) (Record, error)
 	ExitCode() int
 }
@@ -36,6 +37,11 @@ type ByteRecord struct {
 	ExitC int                      `json:"exitcode"`
 }
 
+// Replayer implements Record.
+func (br *ByteRecord) Replayer() *Replayer {
+	return NewReplayer(br)
+}
+
 type StringRecord struct {
 	JsonFormat RecordFormat `json:"format"`
 
@@ -46,7 +52,12 @@ type StringRecord struct {
 	ExitC int                      `json:"exitcode"`
 }
 
-// Reader returns a RecordReader object.
+// Replayer returns a time.Timer/Ticker like object that returns the recorded events.
+func (sr *StringRecord) Replayer() *Replayer {
+	return NewReplayer(sr)
+}
+
+// CombinedReader returns a RecordReader object.
 //
 // It creates a map of time durations to byte slices from the Out, In, and Err fields of the Record object.
 // It then sorts the time durations in ascending order and returns a new RecordReader object with the created map and the sorted time durations.

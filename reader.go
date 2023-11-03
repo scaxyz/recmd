@@ -14,15 +14,36 @@ type RecordReader struct {
 	ignoreTime       bool
 }
 
-func NewReader(record Record) io.Reader {
+// NewCombinedReader returns a reader that return the combined stdout, stdin, and stderr of the given Record.
+func NewCombinedReader(record Record) *RecordReader {
 
-	data := make(map[time.Duration][]byte)
-
-	pipes := []map[time.Duration][]byte{
+	return newReader([]map[time.Duration][]byte{
 		record.StdOut(),
 		record.StdIn(),
 		record.StdErr(),
-	}
+	})
+}
+
+func NewErrorReader(record Record) *RecordReader {
+	return newReader([]map[time.Duration][]byte{
+		record.StdErr(),
+	})
+}
+
+func NewOutputReader(record Record) *RecordReader {
+	return newReader([]map[time.Duration][]byte{
+		record.StdOut(),
+	})
+}
+
+func NewInputReader(record Record) *RecordReader {
+	return newReader([]map[time.Duration][]byte{
+		record.StdIn(),
+	})
+}
+
+func newReader(pipes []map[time.Duration][]byte) *RecordReader {
+	data := make(map[time.Duration][]byte)
 
 	for _, pipe := range pipes {
 		for k, v := range pipe {
@@ -48,7 +69,6 @@ func NewReader(record Record) io.Reader {
 		data:             data,
 		sortedTimePoints: timePoints,
 	}
-
 }
 
 func (rr *RecordReader) Reset() {

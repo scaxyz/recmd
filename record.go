@@ -21,7 +21,7 @@ type Record interface {
 	StdOut() map[time.Duration][]byte
 	StdIn() map[time.Duration][]byte
 	StdErr() map[time.Duration][]byte
-	Reader() io.Reader
+	CombinedReader() io.Reader
 	ConvertTo(format RecordFormat) (Record, error)
 	ExitCode() int
 }
@@ -50,8 +50,8 @@ type StringRecord struct {
 //
 // It creates a map of time durations to byte slices from the Out, In, and Err fields of the Record object.
 // It then sorts the time durations in ascending order and returns a new RecordReader object with the created map and the sorted time durations.
-func (r *ByteRecord) Reader() io.Reader {
-	return NewReader(r)
+func (r *ByteRecord) CombinedReader() io.Reader {
+	return NewCombinedReader(r)
 }
 
 func (br *ByteRecord) StdOut() map[time.Duration][]byte {
@@ -113,8 +113,8 @@ func (br *ByteRecord) ConvertTo(format RecordFormat) (Record, error) {
 
 }
 
-func (sr *StringRecord) Reader() io.Reader {
-	return NewReader(sr)
+func (sr *StringRecord) CombinedReader() io.Reader {
+	return NewCombinedReader(sr)
 }
 
 func (sr *StringRecord) StdOut() map[time.Duration][]byte {

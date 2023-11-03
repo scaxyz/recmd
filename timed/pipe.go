@@ -1,4 +1,4 @@
-package timedpipe
+package timed
 
 import (
 	"fmt"
@@ -88,11 +88,12 @@ func (t *Pipe) Write(p []byte) (n int, err error) {
 	if !t.started {
 		t.setStartTime()
 	}
+	since := time.Since(t.start)
 
 	copied := make([]byte, len(p))
 	copy(copied, p)
 
-	t.dataWrite[time.Since(t.start)] = copied
+	t.dataWrite[since] = copied
 
 	if t.output != nil {
 		return t.output.Write(p)
@@ -110,6 +111,7 @@ func (t *Pipe) Read(p []byte) (n int, err error) {
 	if !t.started {
 		t.setStartTime()
 	}
+	since := time.Since(t.start)
 
 	if t.input != nil {
 		n, err = t.input.Read(p)
@@ -118,7 +120,7 @@ func (t *Pipe) Read(p []byte) (n int, err error) {
 		}
 		copied := make([]byte, n)
 		copy(copied, p)
-		t.dataRead[time.Since(t.start)] = copied
+		t.dataRead[since] = copied
 		return
 	}
 

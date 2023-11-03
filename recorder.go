@@ -7,8 +7,9 @@ import (
 	"os/exec"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/scaxyz/recmd/timedpipe"
+	"github.com/scaxyz/recmd/timed"
 )
 
 type Recorder struct{}
@@ -44,10 +45,11 @@ func (*Recorder) RecordCmd(cmd *exec.Cmd, input io.Reader) (Record, error) {
 	if cmd == nil {
 		return nil, fmt.Errorf("empty command")
 	}
+	startTime := time.Now()
 
-	errP := timedpipe.New(timedpipe.WithOutput(os.Stderr), timedpipe.StartNow())
-	outP := timedpipe.New(timedpipe.WithOutput(os.Stdout), timedpipe.StartNow())
-	inP := timedpipe.New(timedpipe.WithInput(input), timedpipe.StartNow())
+	errP := timed.New(timed.WithOutput(os.Stderr), timed.SetStartTime(startTime))
+	outP := timed.New(timed.WithOutput(os.Stdout), timed.SetStartTime(startTime))
+	inP := timed.New(timed.WithInput(input), timed.SetStartTime(startTime))
 
 	cmd.Stderr = errP
 	cmd.Stdout = outP

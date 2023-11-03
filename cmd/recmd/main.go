@@ -71,6 +71,10 @@ func main() {
 					Usage:   "Ignore delays while replaying",
 					Aliases: []string{"quick"},
 				},
+				&cli.BoolFlag{
+					Name:  "pure",
+					Usage: "Only output the original output",
+				},
 			},
 			Action: Replay,
 		},

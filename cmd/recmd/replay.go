@@ -48,7 +48,9 @@ func Replay(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("Replaying: ", record.Command())
+	if !ctx.Bool("pure") {
+		fmt.Println("Replaying: ", record.Command())
+	}
 
 	reader := record.Reader()
 

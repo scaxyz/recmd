@@ -36,7 +36,9 @@ func Record(ctx *cli.Context) error {
 		input = fileInput
 	}
 
-	fmt.Printf("Recording: '%s'\n", strings.Join(commands, " "))
+	if !ctx.Bool("pure") {
+		fmt.Printf("Recording: '%s'\n", strings.Join(commands, " "))
+	}
 
 	recorder := recmd.NewRecorder()
 
@@ -71,7 +73,9 @@ func Record(ctx *cli.Context) error {
 		return err
 	}
 
-	log.Println("wrote recording to " + outputFilePath)
+	if !ctx.Bool("pure") {
+		log.Println("wrote recording to " + outputFilePath)
+	}
 
 	return nil
 }
